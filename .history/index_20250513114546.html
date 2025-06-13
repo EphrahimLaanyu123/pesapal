@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesapal Payment</title>
+    <script>
+        // Tailwind CSS (Development - for production, use PostCSS or CLI)
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6 flex justify-center items-start min-h-screen">
+    <div class="bg-white rounded-lg shadow-md p-8 w-full max-w-md">
+        <h1 class="text-2xl font-semibold text-blue-600 mb-6 text-center">Make Payment</h1>
+        <form id="paymentForm" class="space-y-4">
+            <div>
+                <label for="amount" class="block text-gray-700 text-sm font-bold mb-2">Amount (KES):</label>
+                <input type="number" id="amount" name="amount" value="100" min="1" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <p id="amount-error" class="text-red-500 text-xs italic" style="display: none;"></p>
+            </div>
+            <div>
+                <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                <input type="email" id="email" name="email" value="test@example.com" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                 <p id="email-error" class="text-red-500 text-xs italic" style="display: none;"></p>
+            </div>
+            <div>
+                <label for="firstName" class="block text-gray-700 text-sm font-bold mb-2">First Name:</label>
+                <input type="text" id="firstName" name="first_name" value="John" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <p id="firstName-error" class="text-red-500 text-xs italic" style="display: none;"></p>
+            </div>
+            <div>
+                <label for="lastName" class="block text-gray-700 text-sm font-bold mb-2">Last Name:</label>
+                <input type="text" id="lastName" name="last_name" value="Doe" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <p id="lastName-error" class="text-red-500 text-xs italic" style="display: none;"></p>
+            </div>
+            <div>
+                <label for="phoneNumber" class="block text-gray-700 text-sm font-bold mb-2">Phone Number:</label>
+                <input type="text" id="phoneNumber" name="phone" value="0700000000" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <p id="phoneNumber-error" class="text-red-500 text-xs italic" style="display: none;"></p>
+            </div>
+            <button type="submit" id="submitPayment" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">
+                Pay Now
+            </button>
+            <div id="paymentResponse" class="mt-4 text-center"></div>
+        </form>
+    </div>
+
+    <script>
+        const paymentForm = document.getElementById('paymentForm');
+        const paymentResponseDiv = document.getElementById('paymentResponse');
+        const amountInput = document.getElementById('amount');
+        const emailInput = document.getElementById('email');
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        const phoneNumberInput = document.getElementById('phoneNumber');
+
+        const amountError = document.getElementById('amount-error');
+        const emailError = document.getElementById('email-error');
+        const firstNameError = document.getElementById('firstName-error');
+        const lastNameError = document.getElementById('lastName-error');
+        const phoneNumberError = document.getElementById('phoneNumber-error');
+
+
+        paymentForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            let hasErrors = false;
+
+            // Validate Amount
+            if (!amountInput.value || parseFloat(amountInput.value) <= 0) {
+                amountError.textContent = "Please enter a valid amount.";
+                amountError.style.display = "block";
+                hasErrors = true;
+            } else {
+                amountError.style.display = "none";
+            }
+
+            // Validate Email
+            const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+            if (!emailInput.value || !emailRegex.test(emailInput.value)) {
+                emailError.textContent = "Please enter a valid email address.";
+                emailError.style.display = "block";
+                hasErrors = true;
+            } else {
+                emailError.style.display = "none";
+            }
+
+            // Validate First Name
+            if (!firstNameInput.value.trim()) {
+                firstNameError.textContent = "Please enter your first name.";
+                firstNameError.style.display = "block";
+                hasErrors = true;
+            } else {
+                firstNameError.style.display = "none";
+            }
+
+            // Validate Last Name
+             if (!lastNameInput.value.trim()) {
+                lastNameError.textContent = "Please enter your last name.";
+                lastNameError.style.display = "block";
+                hasErrors = true;
+            } else {
+                lastNameError.style.display = "none";
+            }
+
+            // Validate Phone Number
+            const phoneRegex = /^\d{10}$/;  // Assumes a 10-digit phone number
+            if (!phoneNumberInput.value || !phoneRegex.test(phoneNumberInput.value)) {
+                phoneNumberError.textContent = "Please enter a valid 10-digit phone number.";
+                phoneNumberError.style.display = "block";
+                hasErrors = true;
+            } else {
+                phoneNumberError.style.display = "none";
+            }
+
+
+            if (hasErrors) {
+                return; // Stop submission if there are errors
+            }
+            const formData = new FormData(paymentForm);
+            const jsonData = {};
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+
+            paymentResponseDiv.textContent = 'Processing payment...';
+            paymentResponseDiv.classList.remove('text-red-500', 'text-green-500'); // Clear previous styles
+
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/submit_order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(jsonData),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    paymentResponseDiv.textContent = `Payment request successful.  Order Tracking ID: ${result.order_tracking_id}  Redirect URL: ${result.redirect_url}`;
+                    paymentResponseDiv.classList.add('text-green-500');
+                   //  Instead of redirecting, display the URL
+                   // window.location.href = result.redirect_url;
+                } else {
+                    paymentResponseDiv.textContent = `Error: ${result.error || 'Payment request failed.'}`;
+                    paymentResponseDiv.classList.add('text-red-500');
+                }
+            } catch (error) {
+                paymentResponseDiv.textContent = `Error: ${error.message}`;
+                paymentResponseDiv.classList.add('text-red-500');
+            }
+        });
+    </script>
+</body>
+</html>

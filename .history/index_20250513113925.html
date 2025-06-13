@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesapal IPN Registration</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h2 {
+            margin-top: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"],
+        button {
+            width: calc(100% - 12px);
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1e7e34;
+        }
+        #registrationResponse, #ipnListResponse {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pesapal IPN URL Registration</h1>
+
+        <h2>Register New IPN URL</h2>
+        <form id="registerIpnForm">
+            <div>
+                <label for="ipnUrl">IPN URL:</label>
+                <input type="text" id="ipnUrl" name="url" required placeholder="https://yourdomain.com/ipn_handler">
+            </div>
+            <div>
+                <label for="ipnNotificationType">Notification Type (GET or POST):</label>
+                <input type="text" id="ipnNotificationType" name="ipn_notification_type" value="POST" required>
+            </div>
+            <button type="button" onclick="registerIpn()">Register IPN URL</button>
+        </form>
+        <div id="registrationResponse"></div>
+
+        <h2>Get Registered IPN URLs</h2>
+        <button type="button" onclick="getRegisteredIpns()">Get IPN List</button>
+        <div id="ipnListResponse"></div>
+    </div>
+
+    <script>
+        const apiUrl = 'http://127.0.0.1:5000'; // Replace with your backend URL
+
+        async function registerIpn() {
+            const form = document.getElementById('registerIpnForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            const responseDiv = document.getElementById('registrationResponse');
+            responseDiv.textContent = 'Processing...';
+
+            try {
+                const response = await fetch(`${apiUrl}/register_ipn`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                const result = await response.json();
+                responseDiv.textContent = JSON.stringify(result, null, 2);
+                responseDiv.className = response.ok ? '' : 'error';
+            } catch (error) {
+                responseDiv.textContent = `Error: ${error.message}`;
+                responseDiv.className = 'error';
+            }
+        }
+
+        async function getRegisteredIpns() {
+            const responseDiv = document.getElementById('ipnListResponse');
+            responseDiv.textContent = 'Fetching IPN list...';
+
+            try {
+                const response = await fetch(`${apiUrl}/get_registered_ipns`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const result = await response.json();
+                responseDiv.textContent = JSON.stringify(result, null, 2);
+                responseDiv.className = response.ok ? '' : 'error';
+            } catch (error) {
+                responseDiv.textContent = `Error: ${error.message}`;
+                responseDiv.className = 'error';
+            }
+        }
+    </script>
+</body>
+</html>

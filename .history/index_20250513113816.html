@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesapal Integration</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h2 {
+            margin-top: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"],
+        input[type="number"],
+        input[type="email"],
+        button {
+            width: calc(100% - 12px);
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #ipnResponse, #submitResponse, #statusResponse {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pesapal API Integration</h1>
+
+        <h2>Register IPN URL</h2>
+        <form id="registerIpnForm">
+            <div>
+                <label for="ipnUrl">IPN URL:</label>
+                <input type="text" id="ipnUrl" name="url" required placeholder="https://yourdomain.com/ipn">
+            </div>
+            <div>
+                <label for="ipnNotificationType">IPN Notification Type:</label>
+                <input type="text" id="ipnNotificationType" name="ipn_notification_type" value="CALLBACK" required placeholder="CALLBACK or WEBHOOK">
+            </div>
+            <button type="button" onclick="registerIpn()">Register IPN</button>
+        </form>
+        <div id="ipnResponse"></div>
+
+        <h2>Submit Order</h2>
+        <form id="submitOrderForm">
+            <div>
+                <label for="merchantId">Merchant ID:</label>
+                <input type="text" id="merchantId" name="merchant_id" placeholder="Your Merchant ID">
+            </div>
+            <div>
+                <label for="currency">Currency:</label>
+                <input type="text" id="currency" name="currency" value="KES">
+            </div>
+            <div>
+                <label for="amount">Amount:</label>
+                <input type="number" id="amount" name="amount" value="100.00" step="0.01" required>
+            </div>
+            <div>
+                <label for="description">Description:</label>
+                <input type="text" id="description" name="description" value="Product Purchase">
+            </div>
+            <div>
+                <label for="callbackUrl">Callback URL:</label>
+                <input type="text" id="callbackUrl" name="callback_url" value="https://yourdomain.com/response">
+            </div>
+            <div>
+                <label for="redirectMode">Redirect Mode:</label>
+                <input type="text" id="redirectMode" name="redirect_mode" value="TOP_WINDOW">
+            </div>
+            <div>
+                <label for="notificationId">Notification ID:</label>
+                <input type="text" id="notificationId" name="notification_id" required placeholder="IPN ID from registration">
+            </div>
+            <div>
+                <label for="branch">Branch:</label>
+                <input type="text" id="branch" name="branch" value="Main Store">
+            </div>
+            <h3>Billing Address</h3>
+            <div>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" value="test@example.com" required>
+            </div>
+            <div>
+                <label for="phone">Phone Number:</label>
+                <input type="text" id="phone" name="phone" value="0700000000" required>
+            </div>
+            <div>
+                <label for="countryCode">Country Code:</label>
+                <input type="text" id="countryCode" name="country_code" value="KE">
+            </div>
+            <div>
+                <label for="firstName">First Name:</label>
+                <input type="text" id="firstName" name="first_name" value="John" required>
+            </div>
+            <div>
+                <label for="middleName">Middle Name:</label>
+                <input type="text" id="middleName" name="middle_name">
+            </div>
+            <div>
+                <label for="lastName">Last Name:</label>
+                <input type="text" id="lastName" name="last_name" value="Doe" required>
+            </div>
+            <div>
+                <label for="line1">Address Line 1:</label>
+                <input type="text" id="line1" name="line_1" value="123 Main Street" required>
+            </div>
+            <div>
+                <label for="line2">Address Line 2:</label>
+                <input type="text" id="line2" name="line_2">
+            </div>
+            <div>
+                <label for="city">City:</label>
+                <input type="text" id="city" name="city" value="Nairobi" required>
+            </div>
+            <div>
+                <label for="state">State:</label>
+                <input type="text" id="state" name="state">
+            </div>
+            <div>
+                <label for="postalCode">Postal Code:</label>
+                <input type="text" id="postalCode" name="postal_code">
+            </div>
+            <div>
+                <label for="zipCode">Zip Code:</label>
+                <input type="text" id="zipCode" name="zip_code">
+            </div>
+            <button type="button" onclick="submitOrder()">Submit Order</button>
+        </form>
+        <div id="submitResponse"></div>
+
+        <h2>Check Transaction Status</h2>
+        <form id="checkStatusForm">
+            <div>
+                <label for="orderTrackingId">Order Tracking ID:</label>
+                <input type="text" id="orderTrackingId" name="orderTrackingId" required placeholder="e.g., TXN-default-id-1684000000">
+            </div>
+            <button type="button" onclick="checkStatus()">Check Status</button>
+        </form>
+        <div id="statusResponse"></div>
+    </div>
+
+    <script>
+        const apiUrl = 'http://127.0.0.1:5000'; // Replace with your backend URL
+
+        async function registerIpn() {
+            const form = document.getElementById('registerIpnForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            const responseDiv = document.getElementById('ipnResponse');
+            responseDiv.textContent = 'Processing...';
+
+            try {
+                const response = await fetch(`${apiUrl}/register_ipn_combined`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                const result = await response.json();
+                responseDiv.textContent = JSON.stringify(result, null, 2);
+                responseDiv.className = response.ok ? '' : 'error';
+            } catch (error) {
+                responseDiv.textContent = `Error: ${error.message}`;
+                responseDiv.className = 'error';
+            }
+        }
+
+        async function submitOrder() {
+            const form = document.getElementById('submitOrderForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            const responseDiv = document.getElementById('submitResponse');
+            responseDiv.textContent = 'Processing...';
+
+            try {
+                const response = await fetch(`${apiUrl}/submit_order`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                const result = await response.json();
+                responseDiv.textContent = JSON.stringify(result, null, 2);
+                responseDiv.className = response.ok ? '' : 'error';
+                if (result && result.redirect_url) {
+                    window.location.href = result.redirect_url;
+                }
+            } catch (error) {
+                responseDiv.textContent = `Error: ${error.message}`;
+                responseDiv.className = 'error';
+            }
+        }
+
+        async function checkStatus() {
+            const form = document.getElementById('checkStatusForm');
+            const formData = new FormData(form);
+            const orderTrackingId = formData.get('orderTrackingId');
+            const responseDiv = document.getElementById('statusResponse');
+            responseDiv.textContent = 'Processing...';
+
+            try {
+                const response = await fetch(`${apiUrl}/check_status?orderTrackingId=${orderTrackingId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const result = await response.json();
+                responseDiv.textContent = JSON.stringify(result, null, 2);
+                responseDiv.className = response.ok ? '' : 'error';
+            } catch (error) {
+                responseDiv.textContent = `Error: ${error.message}`;
+                responseDiv.className = 'error';
+            }
+        }
+    </script>
+</body>
+</html>

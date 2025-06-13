@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesapal Payment</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .error-message {
+            color: red;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Initiate Pesapal Payment</h1>
+        <button id="directPayButton">Pay Now</button>
+        <div id="errorContainer" class="error-message" style="display:none;"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const directPayButton = document.getElementById('directPayButton');
+            const errorContainer = document.getElementById('errorContainer');
+            const apiUrl = 'http://localhost:5000/submit_order'; // Replace with your Flask API URL
+
+            directPayButton.addEventListener('click', function() {
+                fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        // Include necessary order details here
+                        "amount": 100.00,
+                        "description": "Payment for item",
+                        "callback_url": "http://localhost:5173/payment-response", // Replace with your actual callback URL
+                        "redirect_mode": "TOP_WINDOW",
+                        "merchant_id": "your-merchant-id", // Replace with your merchant ID
+                        "notification_id": "your-notification-id", // Replace with your notification ID (if you have one)
+                        "email": "customer@example.com",
+                        "phone": "2547XXXXXXXX",
+                        "first_name": "Customer",
+                        "last_name": "Name"
+                        // Add other relevant billing details as needed
+                    }),
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.error || 'Failed to initiate payment');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.payment_url) {
+                        window.location.href = data.payment_url;
+                    } else {
+                        errorContainer.textContent = 'Error: Payment URL not received.';
+                        errorContainer.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    errorContainer.textContent = 'Error: ' + error.message;
+                    errorContainer.style.display = 'block';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

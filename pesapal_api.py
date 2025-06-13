@@ -2,9 +2,11 @@ from flask import Flask, jsonify, request
 import requests
 from flask_cors import CORS
 import os
+import time  # Make sure the time module is imported
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5174"], methods=["GET", "POST", "OPTIONS"])
+# CORS(app, origins=["http://localhost:5173"], methods=["GET", "POST", "OPTIONS"])
+CORS(app, origins=["http://localhost:5173", "http://127.0.0.1:5500"], methods=["GET", "POST", "OPTIONS"])
 
 CONSUMER_KEY = os.getenv('CONSUMER_KEY', 'Br9toGU3pWfpg21N3adIO2u95u2RTqXd')
 CONSUMER_SECRET = os.getenv('CONSUMER_SECRET', 'S3AnVcFQ25XmEFRFLuV/Y/S5KG0=')
@@ -12,6 +14,7 @@ TOKEN_URL = 'https://pay.pesapal.com/v3/api/Auth/RequestToken'
 REGISTER_IPN_URL = 'https://pay.pesapal.com/v3/api/URLSetup/RegisterIPN'
 GET_IPN_LIST_URL = 'https://pay.pesapal.com/v3/api/URLSetup/GetIpnList'
 SUBMIT_ORDER_URL = 'https://pay.pesapal.com/v3/api/Transactions/SubmitOrderRequest'
+GET_TRANSACTION_STATUS_URL = 'https://pay.pesapal.com/v3/api/Transactions/GetTransactionStatus' # Production URL
 
 def get_pesapal_token():
     """Retrieves a Pesapal API token."""
@@ -83,8 +86,6 @@ def register_ipn_combined():
         'registered_ipns': ipn_list
     }), 200
 
-BEARER_TOKEN = os.getenv('BEARER_TOKEN') # It's better to fetch a fresh token before each request if it expires
-
 @app.route('/submit_order', methods=['POST'])
 def submit_order():
     token = get_pesapal_token()
@@ -129,6 +130,29 @@ def submit_order():
     except requests.exceptions.RequestException as e:
         return jsonify({"error": "Pesapal API call failed", "details": str(e)}), 500
 
+@app.route('/check_status', methods=['GET'])
+def check_status():
+    order_tracking_id = request.args.get('orderTrackingId')
+    if not order_tracking_id:
+        return jsonify({'error': 'Missing orderTrackingId'}), 400
+
+    token = get_pesapal_token()
+    if not token:
+        return jsonify({'error': 'Failed to retrieve Pesapal token'}), 401
+
+    headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {token}',
+    }
+    status_url = f"{GET_TRANSACTION_STATUS_URL}?orderTrackingId={order_tracking_id}"
+
+    try:
+        status_response = requests.get(status_url, headers=headers)
+        status_response.raise_for_status()
+        return jsonify(status_response.json())
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': 'Failed to retrieve transaction status', 'details': str(e)}), 500
+
 if __name__ == '__main__':
-    import time  # Import the time module
     app.run(debug=True)
